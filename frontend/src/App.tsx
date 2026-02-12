@@ -171,8 +171,65 @@ function App() {
       });
 
       if (response.data.success) {
-        // Open download URL
-        window.open(`${API_URL}${response.data.download_url}`, '_blank');
+        const downloadUrl = `${API_URL}${response.data.download_url}`;
+        const filename = response.data.filename || 'video.mp4';
+
+        // Detect if mobile
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (isIOS) {
+          // iOS: Open in new tab - user can tap and hold to save to Photos
+          // iOS Safari doesn't support programmatic downloads
+          setMessage({
+            type: 'success',
+            text: 'Opening video... Tap and hold on the video, then select "Save to Photos" or "Download"'
+          });
+          window.open(downloadUrl, '_blank');
+        } else if (isMobile) {
+          // Android: Try blob download first, fallback to direct link
+          try {
+            setMessage({ type: 'success', text: 'Preparing download...' });
+
+            const fileResponse = await fetch(downloadUrl, {
+              mode: 'cors',
+              credentials: 'omit',
+            });
+
+            if (!fileResponse.ok) throw new Error('Fetch failed');
+
+            const blob = await fileResponse.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 5000);
+            setMessage({ type: 'success', text: 'Download started! Check your Downloads folder or Gallery.' });
+          } catch {
+            // Fallback: open in new tab
+            window.open(downloadUrl, '_blank');
+            setMessage({
+              type: 'success',
+              text: 'Opening video... Tap the download icon or menu to save.'
+            });
+          }
+        } else {
+          // Desktop: Direct link download
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = filename;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setMessage({ type: 'success', text: 'Download started! Check your Downloads folder.' });
+        }
 
         // Save to history
         await saveToHistory({
@@ -184,7 +241,6 @@ function App() {
           thumbnail: videoInfo?.thumbnail,
         });
 
-        setMessage({ type: 'success', text: 'Download started! Check your downloads folder.' });
         setUrl('');
         setVideoInfo(null);
       } else {
