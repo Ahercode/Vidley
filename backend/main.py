@@ -283,7 +283,9 @@ async def get_file(filename: str):
         filename=safe_filename,
         media_type=content_type,
         headers={
-            "Content-Disposition": f'attachment; filename="{safe_filename}"'
+            "Content-Disposition": f'attachment; filename="{safe_filename}"',
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Expose-Headers": "Content-Disposition",
         }
     )
 
