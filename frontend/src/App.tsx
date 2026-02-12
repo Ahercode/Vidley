@@ -37,7 +37,6 @@ const QUALITY_OPTIONS = [
   { value: 'low', label: 'Low (360p)' },
 ] as const;
 
-// Initialize localforage
 localforage.config({
   name: 'vidley',
   storeName: 'downloads',
