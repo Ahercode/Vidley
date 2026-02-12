@@ -1,6 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import localforage from 'localforage';
+
+// Types
+interface VideoInfo {
+  title: string;
+  thumbnail?: string;
+  uploader?: string;
+  duration?: number;
+  extractor?: string;
+}
+
+interface DownloadHistoryItem {
+  url: string;
+  title: string;
+  filename: string;
+  duration?: number;
+  quality: string;
+  thumbnail?: string;
+  downloadedAt: string;
+}
+
+interface Message {
+  type: '' | 'error' | 'success';
+  text: string;
+}
 
 // API URL - change this for production
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -11,7 +35,7 @@ const QUALITY_OPTIONS = [
   { value: 'high', label: 'High (1080p)' },
   { value: 'medium', label: 'Medium (720p)' },
   { value: 'low', label: 'Low (360p)' },
-];
+] as const;
 
 // Initialize localforage
 localforage.config({
@@ -25,16 +49,16 @@ function App() {
   const [quality, setQuality] = useState('best');
   const [loading, setLoading] = useState(false);
   const [loadingInfo, setLoadingInfo] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [videoInfo, setVideoInfo] = useState(null);
-  const [downloadHistory, setDownloadHistory] = useState([]);
+  const [message, setMessage] = useState<Message>({ type: '', text: '' });
+  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
+  const [downloadHistory, setDownloadHistory] = useState<DownloadHistoryItem[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   // Load download history on mount
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const history = await localforage.getItem('downloadHistory');
+        const history = await localforage.getItem<DownloadHistoryItem[]>('downloadHistory');
         if (history) {
           setDownloadHistory(history);
         }
@@ -60,7 +84,7 @@ function App() {
   }, []);
 
   // Save to history
-  const saveToHistory = async (item) => {
+  const saveToHistory = async (item: Omit<DownloadHistoryItem, 'downloadedAt'>) => {
     try {
       const newHistory = [
         {
@@ -107,7 +131,8 @@ function App() {
         setMessage({ type: 'error', text: response.data.error || 'Failed to get video info' });
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || error.message || 'Failed to connect to server';
+      const err = error as { response?: { data?: { detail?: string } }; message?: string };
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to connect to server';
       setMessage({ type: 'error', text: errorMsg });
     } finally {
       setLoadingInfo(false);
@@ -167,7 +192,8 @@ function App() {
         setMessage({ type: 'error', text: response.data.error || 'Download failed' });
       }
     } catch (error) {
-      const errorMsg = error.response?.data?.detail || error.message || 'Failed to download video';
+      const err = error as { response?: { data?: { detail?: string } }; message?: string };
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to download video';
       setMessage({ type: 'error', text: errorMsg });
     } finally {
       setLoading(false);
@@ -175,7 +201,7 @@ function App() {
   };
 
   // Format duration
-  const formatDuration = (seconds) => {
+  const formatDuration = (seconds?: number): string => {
     if (!seconds) return 'Unknown';
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -187,7 +213,7 @@ function App() {
   };
 
   // Format date
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
