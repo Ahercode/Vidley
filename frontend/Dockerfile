@@ -1,25 +1,20 @@
-FROM node:18-alpine
+# Stage 1: Build the React app
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# Copy package files
 COPY package.json yarn.lock* ./
-
-# Install dependencies
 RUN yarn install --frozen-lockfile || yarn install
 
-# Copy application code
 COPY . .
-
-# Build the app
 RUN yarn build
 
-# Install serve to run the production build
-RUN yarn global add serve
+# Stage 2: Serve with nginx (tiny, fast, production-ready)
+FROM nginx:alpine
 
-# Expose port
-EXPOSE 3000
+COPY --from=build /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Run the production build
-CMD ["serve", "-s", "build", "-l", "3000"]
+EXPOSE 80
 
+CMD ["nginx", "-g", "daemon off;"]
