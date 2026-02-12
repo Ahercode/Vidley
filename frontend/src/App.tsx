@@ -27,7 +27,7 @@ interface Message {
 }
 
 // API URL - change this for production
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://vidleybackend.onrender.com';
 
 // Quality options
 const QUALITY_OPTIONS = [
