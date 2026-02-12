@@ -24,7 +24,7 @@ PORT = int(os.getenv("PORT", 8000))
 DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "./downloads"))
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", 500))  # MB
 FILE_CLEANUP_HOURS = int(os.getenv("FILE_CLEANUP_HOURS", 1))
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,https://vidley-inky.vercel.app").split(",")
 
 # Ensure download directory exists
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -137,8 +137,14 @@ def get_yt_dlp_options(quality: str = "best", download: bool = False, output_pat
 
 @app.get("/")
 async def root():
-    """Health check endpoint"""
+    """Root endpoint"""
     return {"status": "ok", "message": "Video Downloader API is running"}
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for deployment platforms"""
+    return {"status": "healthy"}
 
 
 @app.post("/api/video-info", response_model=VideoInfoResponse)
